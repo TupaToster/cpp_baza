@@ -1,0 +1,6 @@
+_deps
+_objs
+*.log
+*.out
+*.exe
+.vscode
