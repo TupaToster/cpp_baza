@@ -49,3 +49,133 @@ void caches::cache_t<T, KeyT>::log () {
         std::cout << "------------------------\n";
     }
 }
+
+
+template <typename T, typename KeyT>
+template <typename F>
+bool caches::cache_t<T, KeyT>::add_check (KeyT key, F slow_getT) {
+
+    auto hit_live = live_hash_.find (key);
+
+    if (hit_live == live_hash_.end ()) {
+
+        auto hit_dead = ghost_hash_.find (key);
+
+        if (hit_dead == ghost_hash_.end ()) {
+
+            killL1 (key, slow_getT);
+
+            return false;
+        }
+        else {
+
+            revive (hit_dead->second, slow_getT);
+
+            return false;
+        }
+    }
+    else {
+
+        if (hit_live->second == base_) return true;
+
+        if (std::distance (hit_live->second, base_) < 0) {
+
+            live_cache_.splice (base_, live_cache_, hit_live->second);
+            --base_;
+        }
+        else {
+
+            live_cache_.splice (base_, live_cache_, hit_live->second);
+            --base_;
+
+            killL2_blank ();
+        }
+    }
+    return true;
+}
+
+template <typename T, typename KeyT>
+void caches::cache_t<T, KeyT>::killL2_blank () {
+
+    ghost_hash_.erase (ghost_cache_.back ());
+    ghost_cache_.pop_back ();
+    ghost_hash_.emplace (live_cache_.back ().first, ghost_cache_.emplace (mid_, live_cache_.back ().first));
+    mid_--;
+
+    live_hash_.erase (live_cache_.back ().first);
+    live_cache_.pop_back ();
+    live_cache_.emplace_front ();
+}
+
+template <typename T, typename KeyT>
+template <typename F>
+void caches::cache_t<T, KeyT>::revive (GhostIt hit, F slow_getT) {
+
+    if (hit == mid_) {
+
+        killL1 (*hit, slow_getT);
+        --base_;
+
+        mid_++;
+        ghost_cache_.erase (hit);
+        ghost_cache_.emplace_back ();
+    }
+    else if (std::distance (hit, mid_) < 0) { //hit is right from mid!!!!!
+
+        killL1 (*hit, slow_getT);
+        --base_;
+
+        ghost_cache_.erase (hit);
+        ghost_cache_.emplace_back ();
+    }
+    else {
+
+        killL2_blank ();
+
+        killL2 (*hit, slow_getT);
+
+        ghost_cache_.erase (hit);
+        ghost_cache_.emplace_front ();
+    }
+}
+
+template <typename T, typename KeyT>
+template <typename F>
+void caches::cache_t<T, KeyT>::killL1 (KeyT key, F slow_getT) {
+
+    ghost_hash_.erase (ghost_cache_.front ());
+    ghost_cache_.pop_front ();
+    ghost_hash_.emplace (live_cache_.front ().first, ghost_cache_.emplace (mid_, live_cache_.front ().first));
+
+    live_hash_.erase (live_cache_.front ().first);
+    live_cache_.pop_front ();
+    live_hash_.emplace (key, live_cache_.emplace (base_, key, slow_getT (key)));
+}
+
+template <typename T, typename KeyT>
+template <typename F>
+void caches::cache_t<T, KeyT>::killL2 (KeyT key, F slow_getT) {
+
+    ghost_hash_.erase (ghost_cache_.back ());
+    ghost_cache_.pop_back ();
+    ghost_hash_.emplace (live_cache_.back ().first, ghost_cache_.emplace (mid_, live_cache_.back ().first));
+    mid_--;
+
+    live_hash_.erase (live_cache_.back ().first);
+    live_cache_.pop_back ();
+    live_hash_.emplace (key, live_cache_.emplace (base_, key, slow_getT (key)));
+    base_--;
+}
+
+template <typename T, typename KeyT>
+caches::cache_t<T, KeyT>::cache_t (size_t size_) : sz_ (size_) {
+
+    live_cache_.resize (sz_);
+
+    base_ = live_cache_.begin();
+    std::advance (base_, sz_ / 2);
+
+    ghost_cache_.resize (GHOST_SIZE * 2);
+    mid_ = ghost_cache_.begin ();
+    std::advance (mid_, GHOST_SIZE);
+}

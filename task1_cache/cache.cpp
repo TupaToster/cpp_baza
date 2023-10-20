@@ -7,14 +7,18 @@ int slowGetT (int a) {
 
 int main () {
 
-    caches::cache_t<int> lol (4);
+    // breaks when size is 4 (fix needed)
+    caches::cache_t<int> lol (6);
 
-    lol.add_check (14, slowGetT);
-    lol.add_check (1, slowGetT);
-    lol.add_check (15, slowGetT);
-    lol.add_check (16, slowGetT);
-    lol.add_check (17, slowGetT);
+    for (;;) {
 
-    lol.log ();
+        std::cout << "Insert number to add to cache: ";
+        int key = 0;
+        std::cin >> key;
+
+        lol.add_check (key, slowGetT);
+
+        lol.log ();
+    }
 
 }

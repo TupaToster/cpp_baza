@@ -32,73 +32,24 @@ template <typename T, typename KeyT = int> struct cache_t {
     std::unordered_map<KeyT, LiveIt> live_hash_;
     std::unordered_map<KeyT, GhostIt> ghost_hash_;
 
-    cache_t (size_t size_) : sz_(size_) {
+    cache_t (size_t size_);
 
-        live_cache_.resize (sz_);
+    template <typename F> bool add_check (KeyT key, F slow_getT);
 
-        base_ = live_cache_.begin();
-        std::advance (base_, sz_ / 2);
+    template <typename F>
+    void killL1 (KeyT key, F slow_getT);
 
-        ghost_cache_.resize (GHOST_SIZE * 2);
-        mid_ = ghost_cache_.begin ();
-        std::advance (mid_, GHOST_SIZE);
-    }
+    template <typename F>
+    void killL2 (KeyT key, F slow_getT);
 
-    template <typename F> bool add_check (KeyT key, F slow_getT) {
+    template <typename F>
+    void revive (GhostIt hit, F slow_getT);
 
-        auto hit_live = live_hash_.find (key);
-
-        if (hit_live == live_hash_.end ()) {
-
-            auto hit_dead = ghost_hash_.find (key);
-
-            if (hit_dead == ghost_hash_.end ()) {
-
-                ghost_hash_.erase (ghost_cache_.front ());
-                ghost_cache_.pop_front ();
-                ghost_hash_.emplace (live_cache_.front ().first, ghost_cache_.emplace (mid_, live_cache_.front ().first));
-
-                live_hash_.erase (live_cache_.front ().first);
-                live_cache_.pop_front ();
-                live_hash_.emplace (key, live_cache_.emplace (base_, key, slow_getT (key)));
-
-                return false;
-            }
-        }
-        return true;
-    }
+    void killL2_blank ();
 
     void log ();
-};
+};}
 
+//This kinda allows to write funcs in another file so....
+//As a famous quote says "I'm not gay, but 20 bucks is 20 bucks"
 #include "cache_lib.cpp"
-
-}
-
-// {
-
-//         std::cout << "Cache log -------------\n<";
-
-//         for (auto i : live_cache_) std::cout << i << (&i == live_cache_.begin () ? "" : " ,");
-
-//         std::cout << ">\n[";
-
-//         for (auto i : live_cache_) {
-
-//             if (i != live_cache_.begin ()) std::cout << "  ";
-
-//             if (&i < base_) std::cout << ".";
-//             else if (&i > base_) std::cout << ":";
-//             else std::cout << "!";
-//         }
-
-//         std::cout << "]\nGhost cache B1: \n";
-
-//         for (auto i : ghost_cache_) {
-
-//             if (i == mid_) std::cout << "Ghost cache B2: \n";
-//             std::cout << ">" << i << '\n';
-//         }
-
-//         std::cout << "--------------------------\n";
-//     }
