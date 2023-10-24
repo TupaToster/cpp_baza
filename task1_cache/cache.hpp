@@ -19,6 +19,9 @@ template <typename T, typename KeyT = int> struct cache_t {
     const static size_t GHOST_SIZE = 3; // amount of tracked ghosts on each side
 
     size_t sz_; // size of real hash
+    size_t b1_min_sz_; // minimal size of b1 cache (1 by default)
+    size_t b2_min_sz_; // min size of b2 (1 by default)
+    // Note that neither of them should be more than sz_ / 2 for cache to work
 
     std::list<std::pair<KeyT, T>> live_cache_;
     std::list<KeyT> ghost_cache_;
@@ -32,7 +35,7 @@ template <typename T, typename KeyT = int> struct cache_t {
     std::unordered_map<KeyT, LiveIt> live_hash_;
     std::unordered_map<KeyT, GhostIt> ghost_hash_;
 
-    cache_t (size_t size_);
+    cache_t (size_t size_, size_t b1_min_size_ = 1, size_t b2_min_size_ = 2);
 
     template <typename F> bool add_check (KeyT key, F slow_getT);
 

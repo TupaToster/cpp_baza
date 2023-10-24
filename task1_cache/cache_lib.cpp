@@ -168,7 +168,16 @@ void caches::cache_t<T, KeyT>::killL2 (KeyT key, F slow_getT) {
 }
 
 template <typename T, typename KeyT>
-caches::cache_t<T, KeyT>::cache_t (size_t size_) : sz_ (size_) {
+caches::cache_t<T, KeyT>::cache_t (size_t size_, size_t b1_min_size_ = 1, size_t b2_min_size_ = 1) : sz_ (size_) {
+
+    assert (size_ >= 2);
+
+    if (b1_min_size_ < 1) b1_min_sz_ = 1;
+    else if (b1_min_size_ >= size_t (sz/2)) b1_min_size = sz / 2 - 1;
+
+    if (b2_min_size_ < 1) b2_min_sz_ = 1;
+    else if (b2_min_size_ >= size_t (sz / 2)) b2_min_sz_ = sz / 2 - 1;
+
 
     live_cache_.resize (sz_);
 
